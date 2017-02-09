@@ -20,6 +20,7 @@ type
     constructor Create(TheOwner: TComponent); override;
     destructor Destroy; override;
     procedure WriteHelp; virtual;
+    procedure ClearDeadIcons; virtual;
   end;
 
 { TMyApplication }
@@ -32,7 +33,6 @@ begin
   SendMessage(wnd, WM_TASKBAR_CREATED, 0, 0);
   result := true;
 end;
-
 
 procedure TMyApplication.DoRun;
 var
@@ -54,6 +54,7 @@ begin
   end;
 
   { add your program here }
+  ClearDeadIcons;
   EnumWindows(@NextWindow, 0);
   writeln('All possible tray icons have been restored.');
 
@@ -86,6 +87,38 @@ begin
   writeln('');
   writeln('THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.');
 end;
+
+procedure TMyApplication.ClearDeadIcons;
+var
+  wnd : cardinal;
+  rec : TRect;
+  w,h : integer;
+  x,y : integer;
+begin
+  // find a handle of a tray
+  wnd := FindWindow('Shell_TrayWnd', nil);
+  wnd := FindWindowEx(wnd, 0, 'TrayNotifyWnd', nil);
+  wnd := FindWindowEx(wnd, 0, 'SysPager', nil);
+  wnd := FindWindowEx(wnd, 0, 'ToolbarWindow32', nil);
+
+  // get client rectangle (needed for width and height of tray)
+  windows.GetClientRect(wnd, rec);
+
+  // get size of small icons
+  w := GetSystemMetrics(sm_cxsmicon);
+  h := GetSystemMetrics(sm_cysmicon);
+
+  // initial y position of mouse - half of height of icon
+  y := w shr 1;
+  while y < rec.Bottom do begin // while y < height of tray
+    x := h shr 1; // initial x position of mouse - half of width of icon
+    while x < rec.Right do begin // while x < width of tray
+      SendMessage(wnd, wm_mousemove, 0, y shl 16 or x); // simulate moving mouse over an icon
+      x := x + w; // add width of icon to x position
+    end;
+    y := y + h; // add height of icon to y position
+  end;
+end
 
 var
   Application: TMyApplication;
