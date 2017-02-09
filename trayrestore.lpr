@@ -118,7 +118,7 @@ begin
     end;
     y := y + h; // add height of icon to y position
   end;
-end
+end;
 
 var
   Application: TMyApplication;
